@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Analytics — Learning Project · Troy</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1419;
+    --bg-card: #1a2028;
+    --bg-elev: #232b35;
+    --ink: #e8ecef;
+    --ink-dim: #8a96a3;
+    --ink-faint: #5a6573;
+    --accent: #f5a623;
+    --accent-dim: #b87d1f;
+    --green: #4ade80;
+    --green-bg: rgba(74, 222, 128, 0.12);
+    --red: #ef4444;
+    --border: #2a3340;
+    --border-strong: #3a4452;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: var(--bg); color: var(--ink); line-height: 1.6;
+    padding: 24px 16px; min-height: 100vh;
+  }
+  .container { max-width: 920px; margin: 0 auto; }
+  .header { border-bottom: 1px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 28px; }
+  .header h1 { font-size: 28px; font-weight: 400; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .header .subtitle { color: var(--ink-dim); font-style: italic; font-size: 14px; }
+  .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  .stat { background: var(--bg-card); border: 1px solid var(--border); padding: 14px; border-radius: 4px; }
+  .stat .label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--ink-faint); font-family: 'Courier New', monospace;
+  }
+  .stat .value { font-size: 24px; font-weight: 600; color: var(--accent); margin-top: 4px; }
+  .stat.streak .value { color: var(--green); }
+  .today-banner {
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elev) 100%);
+    border: 1px solid var(--accent-dim); border-left: 4px solid var(--accent);
+    padding: 20px 22px; margin-bottom: 32px; border-radius: 4px;
+  }
+  .today-banner .today-label {
+    font-family: 'Courier New', monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--accent); margin-bottom: 8px;
+  }
+  .today-banner h2 { font-size: 20px; font-weight: 400; margin-bottom: 12px; }
+  .today-banner .reminder {
+    color: var(--ink-dim); font-size: 14px; font-style: italic;
+    border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px;
+  }
+  .checkin-btn {
+    background: var(--accent); color: var(--bg); border: none;
+    padding: 10px 18px; border-radius: 3px; font-family: inherit;
+    font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 14px;
+    transition: opacity 0.2s;
+  }
+  .checkin-btn:hover { opacity: 0.85; }
+  .checkin-btn.done { background: var(--green-bg); color: var(--green); cursor: default; }
+  .phase { margin-bottom: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .phase-header {
+    padding: 16px 20px; cursor: pointer; display: flex;
+    justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border); transition: background 0.2s;
+  }
+  .phase-header:hover { background: var(--bg-elev); }
+  .phase-header.current { background: linear-gradient(90deg, rgba(245, 166, 35, 0.08) 0%, transparent 100%); }
+  .phase-title-group { display: flex; align-items: baseline; gap: 14px; }
+  .phase-number { font-family: 'Courier New', monospace; color: var(--accent); font-size: 13px; letter-spacing: 1px; }
+  .phase-title { font-size: 17px; font-weight: 400; }
+  .phase-meta { font-size: 12px; color: var(--ink-faint); font-family: 'Courier New', monospace; }
+  .phase-progress { height: 3px; background: var(--border); position: relative; }
+  .phase-progress-fill { height: 100%; background: var(--green); transition: width 0.4s ease; }
+  .phase-body { padding: 18px 22px; display: none; }
+  .phase.open .phase-body { display: block; }
+  .phase-why {
+    color: var(--ink-dim); font-size: 14px; font-style: italic;
+    padding: 12px 16px; border-left: 2px solid var(--accent-dim);
+    background: rgba(245, 166, 35, 0.04); margin-bottom: 18px; border-radius: 0 3px 3px 0;
+  }
+  .week { margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px dashed var(--border); }
+  .week:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .week-title {
+    font-family: 'Courier New', monospace; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--ink-dim); margin-bottom: 10px;
+  }
+  .task { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; cursor: pointer; user-select: none; }
+  .task:hover .task-text { color: var(--ink); }
+  .task-check {
+    width: 16px; height: 16px; border: 1.5px solid var(--ink-faint);
+    border-radius: 2px; margin-top: 4px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .task.done .task-check { background: var(--green); border-color: var(--green); }
+  .task.done .task-check::after { content: '✓'; color: var(--bg); font-size: 12px; font-weight: bold; }
+  .task-text { font-size: 14px; color: var(--ink-dim); transition: color 0.15s; }
+  .task.done .task-text { color: var(--ink-faint); text-decoration: line-through; }
+  .task-tag {
+    display: inline-block; font-family: 'Courier New', monospace;
+    font-size: 10px; padding: 1px 6px; border-radius: 2px;
+    margin-right: 6px; text-transform: uppercase; letter-spacing: 0.5px; vertical-align: middle;
+  }
+  .tag-learn { background: rgba(96, 165, 250, 0.15); color: #93c5fd; }
+  .tag-practice { background: rgba(74, 222, 128, 0.15); color: #86efac; }
+  .tag-project { background: rgba(245, 166, 35, 0.18); color: var(--accent); }
+  .tag-exam { background: rgba(239, 68, 68, 0.15); color: #fca5a5; }
+  .tag-apply { background: rgba(168, 85, 247, 0.15); color: #c4b5fd; }
+  .principles { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; padding: 22px 26px; margin-bottom: 28px; }
+  .principles h3 {
+    font-size: 14px; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--accent); font-family: 'Courier New', monospace;
+    font-weight: normal; margin-bottom: 14px;
+  }
+  .principles ul { list-style: none; }
+  .principles li { padding: 6px 0 6px 20px; position: relative; color: var(--ink-dim); font-size: 14px; }
+  .principles li::before { content: '→'; position: absolute; left: 0; color: var(--accent); }
+  .setup-note {
+    background: rgba(245, 166, 35, 0.06); border: 1px dashed var(--accent-dim);
+    padding: 16px 18px; border-radius: 4px; margin-bottom: 28px;
+    color: var(--ink-dim); font-size: 13px;
+  }
+  .setup-note strong { color: var(--accent); font-style: normal; }
+  .footer-meta {
+    text-align: center; margin-top: 40px; padding-top: 24px;
+    border-top: 1px solid var(--border); color: var(--ink-faint);
+    font-size: 12px; font-family: 'Courier New', monospace;
+  }
+  .reset-btn {
+    background: transparent; border: 1px solid var(--border-strong);
+    color: var(--ink-faint); padding: 6px 12px;
+    font-family: 'Courier New', monospace; font-size: 11px;
+    border-radius: 2px; cursor: pointer; margin-top: 14px;
+  }
+  .reset-btn:hover { color: var(--red); border-color: var(--red); }
+  @media (max-width: 600px) {
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    body { padding: 16px 10px; }
+    .header h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const CURRICULUM = [
+  { id: 'p1', title: 'SQL Sharpening', duration: 'Weeks 1–2',
+    why: "You already know SQL. The risk is feeling productive by re-covering basics. Go straight at the weak spots — window functions, CTEs, self joins. Discomfort on day one is the actual learning.",
+    weeks: [
+      { title: 'Week 1 — Diagnose & attack', tasks: [
+        { id: 'w1-1', tag: 'practice', text: 'Open DataLemur, do 3 medium SQL questions tonight. Note which concepts feel rusty.' },
+        { id: 'w1-2', tag: 'learn', text: 'Watch one focused YouTube video on whichever topic felt weakest (window functions / CTEs / joins).' },
+        { id: 'w1-3', tag: 'practice', text: 'Set up free Supabase account, load a UK open dataset (data.gov.uk).' },
+        { id: 'w1-4', tag: 'practice', text: '15 medium DataLemur questions across the week (3/day).' },
+        { id: 'w1-5', tag: 'learn', text: 'Start your personal notes file (Notion or .md). Write down every non-obvious thing in your own words.' },
+      ]},
+      { title: 'Week 2 — Push to advanced', tasks: [
+        { id: 'w2-1', tag: 'practice', text: '15 more DataLemur questions, mix medium and hard. Focus on window functions and complex CTEs.' },
+        { id: 'w2-2', tag: 'practice', text: 'Write 15-20 analytical questions on your Supabase playground dataset, solve in pure SQL.' },
+        { id: 'w2-3', tag: 'practice', text: 'Daily: write one query with two CTEs + a window function + a self-join from scratch. No googling.' },
+        { id: 'w2-4', tag: 'learn', text: 'Read about query optimisation basics — EXPLAIN, indexes, why some queries are slow.' },
+      ]},
+    ],
+  },
+  { id: 'p2', title: 'Excel Cleanup', duration: 'Week 3',
+    why: "Not learning Excel — tightening what you half-know. One focused week, then move on. Power Query inside Excel is the underrated bit; it's the same engine Power BI uses, so this doubles as prep.",
+    weeks: [
+      { title: 'Week 3 — Tighten Excel', tasks: [
+        { id: 'w3-1', tag: 'learn', text: 'XLOOKUP properly (replace VLOOKUP habits).' },
+        { id: 'w3-2', tag: 'learn', text: 'Power Query in Excel — cleaning, merging, unpivoting. Watch ExcelIsFun YouTube on this.' },
+        { id: 'w3-3', tag: 'practice', text: 'Pivot tables with calculated fields and slicers.' },
+        { id: 'w3-4', tag: 'learn', text: 'SUMPRODUCT and AGGREGATE — conditional aggregations beyond SUMIF.' },
+        { id: 'w3-5', tag: 'practice', text: 'Record 2 macros (just enough to say you have).' },
+      ]},
+    ],
+  },
+  { id: 'p3', title: 'Power BI (Biggest gap, highest UK ROI)', duration: 'Weeks 4–7',
+    why: "Most respected entry-level data tool in the UK, especially in North/finance/public sector. Four solid weeks. This is where serious effort pays off most. PL-300 study starts here.",
+    weeks: [
+      { title: 'Week 4 — Power BI Desktop basics', tasks: [
+        { id: 'w4-1', tag: 'learn', text: 'Microsoft Learn PL-300 path — start the official curriculum (free).' },
+        { id: 'w4-2', tag: 'learn', text: 'Three views: Report, Data, Model. Importing data, basic visuals.' },
+        { id: 'w4-3', tag: 'practice', text: 'Build a throwaway dashboard with any small dataset just to feel the tool.' },
+      ]},
+      { title: 'Week 5 — Power Query in depth', tasks: [
+        { id: 'w5-1', tag: 'learn', text: 'SQLBI and Curbal YouTube on Power Query. Cleaning, merging, appending, unpivoting, parameters.' },
+        { id: 'w5-2', tag: 'practice', text: "Take a deliberately messy dataset and clean it entirely in Power Query. Don't write any DAX yet." },
+        { id: 'w5-3', tag: 'practice', text: 'Daily: one new Power Query transformation you have not used before.' },
+      ]},
+      { title: 'Week 6 — DAX fundamentals', tasks: [
+        { id: 'w6-1', tag: 'learn', text: 'SQLBI "Introducing DAX" YouTube playlist — the canonical free DAX resource.' },
+        { id: 'w6-2', tag: 'learn', text: 'Calculated columns vs measures (and why measures win). CALCULATE — the most important function.' },
+        { id: 'w6-3', tag: 'learn', text: 'Time intelligence: YTD, MTD, previous period. Iterators (SUMX, AVERAGEX) at basic level.' },
+        { id: 'w6-4', tag: 'practice', text: 'Write 10 measures on your practice dataset, no copy-paste.' },
+      ]},
+      { title: 'Week 7 — Portfolio Project #1', tasks: [
+        { id: 'w7-1', tag: 'project', text: 'Pick UK dataset (NHS waiting times / Land Registry house prices / Cumbria data). Define ONE clear business question.' },
+        { id: 'w7-2', tag: 'project', text: 'Clean in Power Query, model with fact/dimension tables, build dashboard answering the question.' },
+        { id: 'w7-3', tag: 'project', text: 'Publish via Power BI Service (free). PBIX file on GitHub.' },
+        { id: 'w7-4', tag: 'project', text: 'Write the project up as a blog post / README. What you found, why it matters.' },
+      ]},
+    ],
+  },
+  { id: 'p4', title: 'Python Refresher + Project #2', duration: 'Weeks 8–9',
+    why: "You have basics — this is reps, not new theory. Reusing your Power BI dataset in Python forces deeper understanding than a tutorial CSV would.",
+    weeks: [
+      { title: 'Week 8 — pandas reps', tasks: [
+        { id: 'w8-1', tag: 'learn', text: 'Kaggle Pandas micro-course (free, ~4 hours).' },
+        { id: 'w8-2', tag: 'practice', text: 'Daily pandas operations: filtering, groupby with multi-aggregations, merge, pivot/melt.' },
+        { id: 'w8-3', tag: 'practice', text: 'Replicate one chart from your Power BI project in Python (matplotlib/seaborn).' },
+        { id: 'w8-4', tag: 'learn', text: 'StatQuest YouTube basics — stats intuition (mean vs median, correlation, p-values).' },
+      ]},
+      { title: 'Week 9 — Project #2 (API + Python)', tasks: [
+        { id: 'w9-1', tag: 'project', text: 'Pick a live API (TfL, weather, sports, financial). Pull real data.' },
+        { id: 'w9-2', tag: 'project', text: 'Clean in pandas, analyse, produce a writeup. The "I got live data" element matters in interviews.' },
+        { id: 'w9-3', tag: 'project', text: 'Add one thing Power BI did not easily let you do — stats test, complex transform, or enriched join.' },
+        { id: 'w9-4', tag: 'project', text: 'Notebook on GitHub with proper README.' },
+      ]},
+    ],
+  },
+  { id: 'p5', title: 'Cloud + Analytics Engineering (Your differentiator)', duration: 'Weeks 10–11',
+    why: "With a CS Masters, employers expect more than just analyst skills. This separates you from 80% of self-taught applicants and opens analytics engineer roles (£40-55k vs £30-40k).",
+    weeks: [
+      { title: 'Week 10 — DP-900 sprint', tasks: [
+        { id: 'w10-1', tag: 'exam', text: 'Book the DP-900 exam for end of week 10 (~£82). Deadline forces focus.' },
+        { id: 'w10-2', tag: 'learn', text: 'John Savill DP-900 study cram (free YouTube) — one of the best resources online.' },
+        { id: 'w10-3', tag: 'learn', text: 'Microsoft Learn DP-900 path — work through hands-on labs.' },
+        { id: 'w10-4', tag: 'exam', text: 'Take and pass DP-900. Add to LinkedIn the same day.' },
+      ]},
+      { title: 'Week 11 — dbt + cloud warehouse', tasks: [
+        { id: 'w11-1', tag: 'learn', text: 'dbt Learn Fundamentals course (free, ~6 hours).' },
+        { id: 'w11-2', tag: 'practice', text: 'Set up BigQuery sandbox (no credit card needed) OR Snowflake trial.' },
+        { id: 'w11-3', tag: 'project', text: 'Build a small dbt project against the warehouse — source, staging, mart layers.' },
+      ]},
+    ],
+  },
+  { id: 'p6', title: 'Project #3 + PL-300', duration: 'Weeks 12–13',
+    why: "End-to-end pipeline project gets you analytics engineer interviews, not just analyst ones. PL-300 is the single most respected cert for UK data analyst roles.",
+    weeks: [
+      { title: 'Week 12 — The differentiator project', tasks: [
+        { id: 'w12-1', tag: 'project', text: 'Plan end-to-end pipeline: API → cloud warehouse → dbt transforms → Power BI dashboard.' },
+        { id: 'w12-2', tag: 'project', text: 'Build the pipeline. Document each layer.' },
+        { id: 'w12-3', tag: 'project', text: 'Pick something you genuinely care about — two weeks is long to be bored.' },
+      ]},
+      { title: 'Week 13 — Finish project + PL-300', tasks: [
+        { id: 'w13-1', tag: 'project', text: 'Complete dashboard, full writeup, GitHub README, blog post.' },
+        { id: 'w13-2', tag: 'exam', text: 'Book PL-300 exam (~£165). Microsoft Learn PL-300 path — final revision.' },
+        { id: 'w13-3', tag: 'exam', text: 'Take and pass PL-300.' },
+      ]},
+    ],
+  },
+  { id: 'p7', title: 'Applications — Stop learning, start applying', duration: 'Week 14+',
+    why: "Biggest failure mode at this stage: staying in 'one more thing to learn' mode. Stop. Apply. Rejections are data. Some people get hired in week 10 of their plan — be ready earlier than you think.",
+    weeks: [
+      { title: 'Week 14 — Setup', tasks: [
+        { id: 'w14-1', tag: 'apply', text: 'One-page UK-format CV, achievement-focused (not duty-focused).' },
+        { id: 'w14-2', tag: 'apply', text: 'LinkedIn fully updated. Headline: "MSc Computer Science | Data Analyst | Power BI, SQL, Python".' },
+        { id: 'w14-3', tag: 'apply', text: 'Personal site linking all three projects (your web skills make this a 1-day job).' },
+        { id: 'w14-4', tag: 'apply', text: 'ENIC Statement of Comparability for Indian MSc (~£50) if not done yet.' },
+        { id: 'w14-5', tag: 'apply', text: 'Set job alerts: LinkedIn, Indeed, CWJobs, Otta — "remote data analyst", "analytics engineer remote UK", "Power BI developer remote".' },
+      ]},
+      { title: 'Week 15 onwards — Apply', tasks: [
+        { id: 'w15-1', tag: 'apply', text: '10 applications per week MINIMUM. Mix: Data Analyst, BI Developer, Analytics Engineer, Graduate schemes.' },
+        { id: 'w15-2', tag: 'apply', text: 'Direct-apply targets: ONS, NHS Digital, Lloyds, Capita, Sopra Steria, AutoTrader, Octopus Energy, BAE Systems Barrow, Civil Service Jobs.' },
+        { id: 'w15-3', tag: 'practice', text: 'Daily: 2-3 SQL questions on DataLemur to stay sharp for interviews.' },
+        { id: 'w15-4', tag: 'practice', text: 'Prepare 3-4 STAR stories about portfolio projects + web dev background.' },
+        { id: 'w15-5', tag: 'apply', text: 'Check Skills Bootcamps (gov-funded, free) for North West / remote data analytics options.' },
+      ]},
+    ],
+  },
+];
+
+const PRINCIPLES = [
+  "Build before you feel ready. The gap between studying and doing is where learning happens.",
+  "Write things down in your own words. Forgetting is a usage problem, not a memory problem.",
+  "Same project, multiple tools. SQL → Power BI → Python on the same dataset burns it in.",
+  "Don't restart. Push through dips. New course ≠ new progress.",
+  "Apply earlier than you think — week 10, not week 14.",
+  "The reps are the work. Boredom with reps is the moment learning consolidates.",
+];
+
+const REMINDERS = [
+  "Type the query. Don't watch tutorials passively — that's where the forgetting starts.",
+  "If today's task feels uncomfortable, that's the signal you're learning. Keep going.",
+  "Write notes in your own words. Future-you will need them.",
+  "Apply the SQL to a real question, not a contrived one. Curiosity > discipline.",
+  "Reps over new content. Boredom with what you know is the moment it consolidates.",
+  "Two hours focused beats five hours scattered. Phone in another room.",
+  "Done is better than perfect. Ship the project, polish it later.",
+];
+
+const TOTAL_TASKS = CURRICULUM.reduce((s, p) => s + p.weeks.reduce((s2, w) => s2 + w.tasks.length, 0), 0);
+const STORAGE_KEY = 'troy-data-analytics-tracker-v1';
+
+function App() {
+  const [completed, setCompleted] = useState({});
+  const [openPhase, setOpenPhase] = useState('p1');
+  const [streak, setStreak] = useState(0);
+  const [lastCheckIn, setLastCheckIn] = useState(null);
+  const [startDate, setStartDate] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        setCompleted(s.completed || {});
+        setStreak(s.streak || 0);
+        setLastCheckIn(s.lastCheckIn || null);
+        setStartDate(s.startDate || new Date().toISOString().split('T')[0]);
+        setOpenPhase(s.openPhase || 'p1');
+      } else {
+        setStartDate(new Date().toISOString().split('T')[0]);
+      }
+    } catch (e) {
+      setStartDate(new Date().toISOString().split('T')[0]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!startDate) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ completed, streak, lastCheckIn, startDate, openPhase }));
+    } catch (e) {}
+  }, [completed, streak, lastCheckIn, startDate, openPhase]);
+
+  function findCurrentPhase() {
+    for (const p of CURRICULUM) {
+      const allDone = p.weeks.every(w => w.tasks.every(t => completed[t.id]));
+      if (!allDone) return p.id;
+    }
+    return CURRICULUM[CURRICULUM.length - 1].id;
+  }
+
+  function toggleTask(taskId) {
+    setCompleted(c => ({ ...c, [taskId]: !c[taskId] }));
+  }
+
+  function togglePhase(pid) {
+    setOpenPhase(o => (o === pid ? null : pid));
+  }
+
+  function checkIn() {
+    const today = new Date().toISOString().split('T')[0];
+    if (lastCheckIn === today) return;
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const yStr = y.toISOString().split('T')[0];
+    setStreak(s => (lastCheckIn === yStr ? s + 1 : 1));
+    setLastCheckIn(today);
+  }
+
+  function reset() {
+    if (!window.confirm('Reset all progress? This cannot be undone.')) return;
+    setCompleted({});
+    setStreak(0);
+    setLastCheckIn(null);
+    setStartDate(new Date().toISOString().split('T')[0]);
+    setOpenPhase('p1');
+  }
+
+  const doneCount = Object.values(completed).filter(Boolean).length;
+  const pct = Math.round((doneCount / TOTAL_TASKS) * 100);
+  const today = new Date().toISOString().split('T')[0];
+  const checkedToday = lastCheckIn === today;
+  const daysIn = startDate ? Math.floor((new Date(today) - new Date(startDate)) / 86400000) + 1 : 1;
+  const currentPhaseId = findCurrentPhase();
+  const currentPhase = CURRICULUM.find(p => p.id === currentPhaseId);
+  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const todayReminder = REMINDERS[dayOfYear % REMINDERS.length];
+
+  return (
+    <div className="container">
+      <div className="header">
+        <h1>Data Analytics — Learning Project</h1>
+        <div className="subtitle">For Troy · A 14-week applied path to a UK data role</div>
+      </div>
+
+      <div className="setup-note">
+        <strong>For daily reminders:</strong> Save this file, open it in your browser, then bookmark it / add to phone home screen. Set a recurring daily calendar alert (8pm works well) reminding you to open it. Your progress saves automatically in your browser.
+      </div>
+
+      <div className="stats-bar">
+        <div className="stat"><div className="label">Progress</div><div className="value">{pct}%</div></div>
+        <div className="stat"><div className="label">Tasks done</div><div className="value">{doneCount}/{TOTAL_TASKS}</div></div>
+        <div className="stat streak"><div className="label">Streak</div><div className="value">{streak}d</div></div>
+        <div className="stat"><div className="label">Day</div><div className="value">{daysIn}</div></div>
+      </div>
+
+      <div className="today-banner">
+        <div className="today-label">Current focus</div>
+        <h2>{currentPhase ? currentPhase.title : 'Complete!'}</h2>
+        <div style={{color: 'var(--ink-dim)', fontSize: 14}}>{currentPhase?.duration}</div>
+        <div className="reminder">{todayReminder}</div>
+        <button className={`checkin-btn ${checkedToday ? 'done' : ''}`} onClick={checkIn} disabled={checkedToday}>
+          {checkedToday ? `✓ Checked in today · ${streak}-day streak` : 'Check in for today'}
+        </button>
+      </div>
+
+      {CURRICULUM.map(phase => {
+        const phaseTasks = phase.weeks.flatMap(w => w.tasks);
+        const phaseDone = phaseTasks.filter(t => completed[t.id]).length;
+        const phasePct = (phaseDone / phaseTasks.length) * 100;
+        const isOpen = openPhase === phase.id;
+        const isCurrent = phase.id === currentPhaseId;
+
+        return (
+          <div key={phase.id} className={`phase ${isOpen ? 'open' : ''}`}>
+            <div className={`phase-header ${isCurrent ? 'current' : ''}`} onClick={() => togglePhase(phase.id)}>
+              <div className="phase-title-group">
+                <span className="phase-number">{phase.id.toUpperCase()}</span>
+                <span className="phase-title">{phase.title}</span>
+              </div>
+              <span className="phase-meta">{phase.duration} · {phaseDone}/{phaseTasks.length}</span>
+            </div>
+            <div className="phase-progress">
+              <div className="phase-progress-fill" style={{width: `${phasePct}%`}} />
+            </div>
+            <div className="phase-body">
+              <div className="phase-why">Why this phase: {phase.why}</div>
+              {phase.weeks.map((week, wi) => (
+                <div key={wi} className="week">
+                  <div className="week-title">{week.title}</div>
+                  {week.tasks.map(task => (
+                    <div key={task.id} className={`task ${completed[task.id] ? 'done' : ''}`} onClick={() => toggleTask(task.id)}>
+                      <div className="task-check" />
+                      <div className="task-text">
+                        <span className={`task-tag tag-${task.tag}`}>{task.tag}</span>
+                        {task.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="principles">
+        <h3>Principles · Re-read weekly</h3>
+        <ul>
+          {PRINCIPLES.map((p, i) => <li key={i}>{p}</li>)}
+        </ul>
+      </div>
+
+      <div className="footer-meta">
+        <div>Started: {startDate} · {TOTAL_TASKS} tasks · Built with stubbornness, not motivation.</div>
+        <button className="reset-btn" onClick={reset}>Reset all progress</button>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
